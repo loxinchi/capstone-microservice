@@ -16,7 +16,7 @@ spec:
         api: external
     spec:
       containers:
-      - image: testnasu/udagram-frontend-a:v1.0.0
+      - image: testnasu/udagram-frontend-a:v2.0.0
         name: frontend-a
         imagePullPolicy: Always
         ports:
