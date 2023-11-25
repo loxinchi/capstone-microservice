@@ -5,11 +5,6 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - name: "8100"
-    port: 8100
-    targetPort: 80
-  - name: "8200"
-    port: 8200
-    targetPort: 80
+  - port: 80
   selector:
     app: frontend

@@ -3,9 +3,9 @@ kind: Deployment
 metadata:
   labels:
     app: frontend
-  name: frontend
+  name: frontend-a
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: frontend
@@ -16,7 +16,7 @@ spec:
         api: external
     spec:
       containers:
-      - image: testnasu/udagram-frontend-a:latest
+      - image: testnasu/udagram-frontend-a:v1.0.0
         name: frontend-a
         imagePullPolicy: Always
         ports:
