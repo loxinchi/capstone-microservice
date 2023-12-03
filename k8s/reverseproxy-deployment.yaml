@@ -15,7 +15,7 @@ spec:
         app: reverseproxy
     spec:
       containers:
-      - image: testnasu/reverseproxy:latest
+      - image: testnasu/reverseproxy:v2.0.0
         name: reverseproxy
         imagePullPolicy: Always
         resources:
