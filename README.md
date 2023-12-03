@@ -1,29 +1,59 @@
-# Udagram Image Filtering Application
+# Udagram Image Filtering Application microservices project
 
 Udagram is a simple cloud application developed alongside the Udacity Cloud Developer Nanodegree. It allows users to register and log into a web client, post photos to the feed, and process photos using an image filtering microservice.
 
-The project is split into two parts:
-1. Frontend - Angular web application built with Ionic Framework
-2. Backend RESTful API - Node-Express application
+This project demonstrates microservices architecture with A/B deployment and rolling update using Docker, Kubernetes (AWS EKS), GitHub Actions, and Nginx as a reverse proxy.
 
-## Getting Started
-> _tip_: it's recommended that you start with getting the backend API running since the frontend web application depends on the API.
+## Table of Contents
 
-### Prerequisite
-node v12.22.12 (npm v6.14.16)
+- [Udagram Image Filtering Application microservices project](#udagram-image-filtering-application-microservices-project)
+	- [Table of Contents](#table-of-contents)
+	- [Introduction](#introduction)
+	- [Prerequisites](#prerequisites)
+	- [Setup](#setup)
+			- [Environment Script](#environment-script)
+		- [Database](#database)
+		- [S3](#s3)
+		- [Microservices Backend (RESTful API - Node-Express application)](#microservices-backend-restful-api---node-express-application)
+		- [Frontend (Angular web application built with Ionic Framework)](#frontend-angular-web-application-built-with-ionic-framework)
+		- [Nginx Reverse Proxy](#nginx-reverse-proxy)
+	- [Deployment](#deployment)
+		- [AWS EKS](#aws-eks)
+	- [GitHub Actions Workflow](#github-actions-workflow)
+	- [File Structure](#file-structure)
 
-1. The depends on the Node Package Manager (NPM). You will need to download and install Node from [https://nodejs.com/en/download](https://nodejs.org/en/download/). This will allow you to be able to run `npm` commands.
-2. Environment variables will need to be set. These environment variables include database connection details that should not be hard-coded into the application code.
+## Introduction
+
+This project showcases a microservices architecture with two backend services, two versions of the frontend for Kubernetes A/B deployment, and an Nginx reverse proxy to manage routing. The setup utilizes Docker for containerization, AWS EKS for Kubernetes orchestration, and GitHub Actions for automated updates and deployments.
+
+## Prerequisites
+
+Before you begin, ensure you have the following prerequisites installed:
+
+- Docker
+- Kubernetes CLI (`kubectl`)
+- AWS CLI
+- GitHub account with necessary repository access
+- Node v14.21.3 (npm v6.14.18)
+
+## Setup
 
 #### Environment Script
-A file named `set_env.sh` has been prepared as an optional tool to help you configure these variables on your local development environment.
+Prepare a `set_env.sh` to help you to configure these variables on your local development environment.
+```
+export POSTGRES_USERNAME=username
+export POSTGRES_PASSWORD=pw
+export POSTGRES_HOST=postgres.xxxxxx.<region>.rds.amazonaws.com
+export POSTGRES_DB=postgres
+export AWS_BUCKET=s3 bucket name
+export AWS_REGION=region
+export AWS_PROFILE=default
+export JWT_SECRET=testing
+export URL=http://localhost:8100
+```
+Afterwards, please prevent the file from being included in your solution by adding the file to our `.gitignore` file.
 
-We do _not_ want your credentials to be stored in git. After pulling this `starter` project, run the following command to tell git to stop tracking the script in git but keep it stored locally. This way, you can use the script for your convenience and reduce risk of exposing your credentials.
-`git rm --cached set_env.sh`
-
-Afterwards, we can prevent the file from being included in your solution by adding the file to our `.gitignore` file.
-
-### 1. Database
+### Database
 Create a PostgreSQL database either locally or on AWS RDS. The database is used to store the application's metadata.
 
 * We will need to use password authentication for this project. This means that a username and password is needed to authenticate and access the database.
@@ -33,18 +63,35 @@ Once your database is set up, set the config values for environment variables pr
 * If you set up a local database, your `POSTGRES_HOST` is most likely `localhost`
 * If you set up an RDS database, your `POSTGRES_HOST` is most likely in the following format: `***.****.us-west-1.rds.amazonaws.com`. You can find this value in the AWS console's RDS dashboard.
 
-* you can run source set_env.sh to configure the env variable in local terminal
+* you can run `source set_env.sh` to configure the env variable in local terminal.
 
 
-### 2. S3
+### S3
 Create an AWS S3 bucket. The S3 bucket is used to store images that are displayed in Udagram.
 
 Set the config values for environment variables prefixed with `AWS_` in `set_env.sh`.
 
-### 3. Backend API
-Launch the backend API locally. The API is the application's interface to S3 and the database.
+AWS S3 bucket name should be universally unique.
 
-* To download all the package dependencies, run the command from the directory `udagram-api/`:
+### Microservices Backend (RESTful API - Node-Express application)
+
+1. Go to each microservices backend repository.
+```bash
+cd udagram-api-feed
+cd udagram-api-user
+```
+
+2. Build and run the Docker images for each microservice.
+```bash
+docker build -t udagram-api-feed:v1 .
+docker build -t udagram-api-user:v1 .
+```
+
+Launch the backend API locally:
+
+The API is the application's interface to S3 and the database.
+
+* To download all the package dependencies, run the command from each directory:
     ```bash
     npm install .
     ```
@@ -52,14 +99,28 @@ Launch the backend API locally. The API is the application's interface to S3 and
     ```bash
     npm run dev
     ```
-* You can visit `http://localhost:8080/api/v0/feed` in your web browser to verify that the application is running. You should see a JSON payload. Feel free to play around with Postman to test the API's.
+* You can visit `http://localhost:8080/api/v0/feed`, `http://localhost:8080/api/v0/user` in your web browser to verify that the application is running.
 
-### 4. Frontend App
-Launch the frontend app locally.
+### Frontend (Angular web application built with Ionic Framework)
 
-* To download all the package dependencies, run the command from the directory `udagram-frontend/`:
+1. Go to each frontend repository.
+```bash
+cd udagram-frontend-a
+cd udagram-frontend-b
+```
+
+2. Build and run the Docker images for each version.
+```bash
+docker build -t udagram-frontend-a:v1 .
+docker build -t udagram-frontend-b:v1 .
+```
+3. Configure environment variables in `./src/environments`.
+
+Launch the frontend app locally:
+
+* To download all the package dependencies, run the command from the directory:
     ```bash
-    npm install .
+    npm install
     ```
 * Install Ionic Framework's Command Line tools for us to build and run the application:
     ```bash
@@ -75,16 +136,66 @@ Launch the frontend app locally.
     ```
 * You can visit `http://localhost:8100` in your web browser to verify that the application is running. You should see a web interface.
 
-## Tips
-1. Take a look at `udagram-api` -- does it look like we can divide it into two modules to be deployed as separate microservices?
-2. The `.dockerignore` file is included for your convenience to not copy `node_modules`. Copying this over into a Docker container might cause issues if your local environment is a different operating system than the Docker image (ex. Windows or MacOS vs. Linux).
-3. It's useful to "lint" your code so that changes in the codebase adhere to a coding standard. This helps alleviate issues when developers use different styles of coding. `eslint` has been set up for TypeScript in the codebase for you. To lint your code, run the following:
-    ```bash
-    npx eslint --ext .js,.ts src/
-    ```
-    To have your code fixed automatically, run
-    ```bash
-    npx eslint --ext .js,.ts src/ --fix
-    ```
-4. `set_env.sh` is really for your backend application. Frontend applications have a different notion of how to store configurations. Configurations for the application endpoints can be configured inside of the `environments/environment.*ts` files.
-5. In `set_env.sh`, environment variables are set with `export $VAR=value`. Setting it this way is not permanent; every time you open a new terminal, you will have to run `set_env.sh` to reconfigure your environment variables. To verify if your environment variable is set, you can check the variable with a command like `echo $POSTGRES_USERNAME`.
+### Nginx Reverse Proxy
+
+1. Go to udagram-reverseproxy repository.
+```bash
+cd udagram-reverseproxy
+```
+
+2. Build and run the Nginx Docker image.
+```bash
+docker build -t nginx-reverse-proxy .
+```
+
+## Deployment
+
+### AWS EKS
+The steps are for the initial manual deployment.
+For the future deployments, it uses github actions.
+
+1. Create an AWS EKS cluster.
+```bash
+aws eks create-cluster --name my-cluster --role-arn eks-service-role-arn --resources-vpc-config subnetIds=subnet-ids,securityGroupIds=security-group-ids
+```
+
+2. Configure `kubectl` to use the new EKS cluster.
+```bash
+aws eks --region region update-kubeconfig --name my-cluster
+```
+
+3. Update secrets
+```bash
+aws-secret.yaml
+env-secret.yaml
+env-configmap.yaml
+```
+
+4. Deploy to the EKS cluster.
+```
+cd k8s
+./deploy.sh
+```
+
+5. Monitor the deployment using `kubectl get pods`, `kubectl get services`, etc.
+
+6. Change `apiHost:` to load balancer service URL and re-deploy two frontend applications.
+
+7. Access frontend with reverse proxy load balancer service URL.
+
+## GitHub Actions Workflow
+
+The project is configured with GitHub Actions for automated updates and deployments. The workflow can be found in the `.github/workflows` directory. Ensure that GitHub Secrets for AWS credentials are set in the repository.
+
+## File Structure
+
+- **udagram-api-feed**: Contains microservices backend source code.
+- **udagram-api-user**: Contains microservices backend source code.
+- **udagram-frontend-***: Contains frontend source code.
+- **nginx-reverse-proxy**: Contains Nginx reverse proxy configuration.
+- **.github/workflows**: GitHub Actions workflow files.
+- **k8s**: Contains Kubernetes deployment and service files and secrets configurations.
+
+<!-- ## License
+
+This project is licensed under the [MIT License](LICENSE). -->
