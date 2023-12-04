@@ -20,6 +20,7 @@ This project demonstrates microservices architecture with A/B deployment and rol
 	- [Deployment](#deployment)
 		- [AWS EKS](#aws-eks)
 	- [GitHub Actions Workflow](#github-actions-workflow)
+	- [Monitor with CloudWatch Container Insights](#monitor-with-cloudwatch-container-insights)
 	- [File Structure](#file-structure)
 
 ## Introduction
@@ -187,6 +188,21 @@ cd k8s
 
 The project is configured with GitHub Actions for automated updates and deployments. The workflow can be found in the `.github/workflows` directory. Ensure that GitHub Secrets for AWS credentials are set in the repository.
 
+## Monitor with CloudWatch Container Insights
+1. Enable CloudWatchAgentServer Policy for the worker node IAM Role
+2. Execute command
+```bash
+ClusterName='<my-cluster-name>'
+RegionName='<my-cluster-region>'
+FluentBitHttpPort='2020'
+FluentBitReadFromHead='Off'
+[[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On'
+[[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/'${ClusterName}'/;s/{{region_name}}/'${RegionName}'/;s/{{http_server_toggle}}/"'${FluentBitHttpServer}'"/;s/{{http_server_port}}/"'${FluentBitHttpPort}'"/;s/{{read_from_head}}/"'${FluentBitReadFromHead}'"/;s/{{read_from_tail}}/"'${FluentBitReadFromTail}'"/' | kubectl apply -f -
+```
+
+![Container Insights](https://github.com/loxinchi/capstone-microservice/assets/76967954/f3f5e689-8a21-428a-8e4f-21cffa9efdd6)
+
 ## File Structure
 
 - **udagram-api-feed**: Contains microservices backend source code.
@@ -198,4 +214,4 @@ The project is configured with GitHub Actions for automated updates and deployme
 
 <!-- ## License
 
-This project is licensed under the [MIT License](LICENSE). -->
+This project is licensed under the (LICENSE). -->
